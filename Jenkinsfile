@@ -55,7 +55,7 @@ pipeline {
                     sh "git clone https://github.com/abhilash97-dev/test_jenkins.git process_repo"
 
                     // Run the Python script with the file paths as arguments
-                    sh "python process_repo/process_changes.py ${SPARK_REPO_DIR}/changed_files.txt ${SPARK_REPO_DIR}/diff_output.txt"
+                    sh "python3 process_repo/process_changes.py ${SPARK_REPO_DIR}/changed_files.txt ${SPARK_REPO_DIR}/diff_output.txt"
                 }
             }
         }
