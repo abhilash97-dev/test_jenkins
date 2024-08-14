@@ -25,7 +25,7 @@ pipeline {
             }
         }
 
-        stage('Check File Changes in Spark Repo') {
+        stage('Check Python File Changes in Spark Repo') {
             steps {
                 script {
                     // Navigate to the Spark repo directory
@@ -39,25 +39,37 @@ pipeline {
                         // Get the list of files changed in the last commit
                         def changedFiles = sh(script: "git diff --name-only ${previousCommit} ${lastCommit}", returnStdout: true).trim()
 
-                        def jsonOutput = [:]
+                        def pyOutput = [:]
+                        def pyDiffs = ""
 
                         changedFiles.split('\n').each { file ->
                             if (file.endsWith('.py')) {
                                 // Check if the file is new or existing
                                 def fileStatus = sh(script: "git diff --name-status ${previousCommit} ${lastCommit} | grep ${file} | awk '{print \$1}'", returnStdout: true).trim()
                                 def status = (fileStatus == 'A') ? 1 : 0
-                                jsonOutput[file] = status
+                                pyOutput[file] = status
+
+                                // Get the diff for the .py file
+                                def diff = sh(script: "git diff ${previousCommit} ${lastCommit} -- ${file}", returnStdout: true).trim()
+                                pyDiffs += "File: ${file}\n${diff}\n\n"
                             }
                         }
 
                         // Convert map to JSON format
-                        def json = groovy.json.JsonOutput.toJson(jsonOutput)
+                        def json = groovy.json.JsonOutput.toJson(pyOutput)
 
                         // Write the JSON output to a file
-                        writeFile file: 'changed_files.json', text: json
-
-                        echo "Changed JSON files:"
+                        writeFile file: 'python_file_changes.json', text: json
+                        echo "Changed Python files:"
                         echo json
+
+                        // Write the diffs for .py files to a file
+                        if (pyDiffs) {
+                            writeFile file: 'py_diff_output.txt', text: pyDiffs
+                            echo "Python file diffs saved to py_diff_output.txt"
+                        } else {
+                            echo "No Python file changes detected."
+                        }
                     }
                 }
             }
@@ -77,7 +89,7 @@ pipeline {
                     sh "git clone ${TEST_REPO_URL} ${TEST_REPO_DIR}"
 
                     // Run the Python script with the JSON file path as an argument
-                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/changed_files.json"
+                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/python_file_changes.json"
                 }
             }
         }
