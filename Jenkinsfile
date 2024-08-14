@@ -44,6 +44,9 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 script {
+                    // Remove existing directory if it exists
+                    sh "rm -rf process_repo"
+
                     // Clone Repo B where the Python script is stored
                     sh "git clone https://github.com/abhilash97-dev/test_jenkins.git process_repo"
 
