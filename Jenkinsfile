@@ -89,7 +89,7 @@ pipeline {
                     sh "git clone ${TEST_REPO_URL} ${TEST_REPO_DIR}"
 
                     // Run the Python script with the JSON file path as an argument
-                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/python_file_changes.json"
+                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/python_file_changes.json ${SPARK_REPO_DIR}/py_diff_output.txt"
                 }
             }
         }
