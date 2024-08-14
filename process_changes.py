@@ -1,9 +1,10 @@
 import sys
+import json
 
 def process_changes(changed_files_path, diff_output_path):
-    # Read the changed files
+    # Read the changed files from the JSON file
     with open(changed_files_path, 'r') as f:
-        changed_files = f.read().splitlines()
+        changed_files = json.load(f)
     
     # Read the diffs
     with open(diff_output_path, 'r') as f:
@@ -11,8 +12,9 @@ def process_changes(changed_files_path, diff_output_path):
 
     # Process the changed files and diffs
     print("Processing the following files:")
-    for file in changed_files:
-        print(f"- {file}")
+    for file, status in changed_files.items():
+        file_status = "New" if status == 1 else "Modified"
+        print(f"- {file} ({file_status})")
 
     print("\nDiffs:")
     print(diff_output)
