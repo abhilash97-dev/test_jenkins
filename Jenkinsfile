@@ -48,7 +48,7 @@ pipeline {
                     sh "git clone https://github.com/abhilash97-dev/test_jenkins.git process_repo"
 
                     // Run the Python script with the file paths as arguments
-                    sh "python3 process_repo/process_changes.py changed_files.txt diff_output.txt"
+                    sh "python process_repo/process_changes.py changed_files.txt diff_output.txt"
                 }
             }
         }
