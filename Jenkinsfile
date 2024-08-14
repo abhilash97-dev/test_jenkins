@@ -39,18 +39,25 @@ pipeline {
                         // Get the list of files changed in the last commit
                         def changedFiles = sh(script: "git diff --name-only ${previousCommit} ${lastCommit}", returnStdout: true).trim()
 
-                        // Get detailed diffs
-                        def diffOutput = sh(script: "git diff ${previousCommit} ${lastCommit}", returnStdout: true).trim()
+                        def jsonOutput = [:]
 
-                        echo "Files changed in the last push:"
-                        echo changedFiles
+                        changedFiles.split('\n').each { file ->
+                            if (file.endsWith('.py')) {
+                                // Check if the file is new or existing
+                                def fileStatus = sh(script: "git diff --name-status ${previousCommit} ${lastCommit} | grep ${file} | awk '{print \$1}'", returnStdout: true).trim()
+                                def status = (fileStatus == 'A') ? 1 : 0
+                                jsonOutput[file] = status
+                            }
+                        }
 
-                        echo "File diffs:"
-                        echo diffOutput
+                        // Convert map to JSON format
+                        def json = groovy.json.JsonOutput.toJson(jsonOutput)
 
-                        // Write the changed files and diffs to files
-                        writeFile file: 'changed_files.txt', text: changedFiles
-                        writeFile file: 'diff_output.txt', text: diffOutput
+                        // Write the JSON output to a file
+                        writeFile file: 'changed_files.json', text: json
+
+                        echo "Changed JSON files:"
+                        echo json
                     }
                 }
             }
@@ -69,8 +76,8 @@ pipeline {
                     // Clone the repository where the Python script is stored
                     sh "git clone ${TEST_REPO_URL} ${TEST_REPO_DIR}"
 
-                    // Run the Python script with the file paths as arguments
-                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/changed_files.txt ${SPARK_REPO_DIR}/diff_output.txt"
+                    // Run the Python script with the JSON file path as an argument
+                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/changed_files.json"
                 }
             }
         }
