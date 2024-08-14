@@ -3,21 +3,32 @@ pipeline {
 
     environment {
         SPARK_REPO_URL = 'https://github.com/abhilash97-dev/spark.git'
+        TEST_REPO_URL = 'https://github.com/abhilash97-dev/test_jenkins.git'
         SPARK_REPO_DIR = 'spark_repo'
+        TEST_REPO_DIR = 'process_repo'
     }
 
     stages {
         stage('Checkout Repo A (Spark)') {
             steps {
-                // Clone the spark repository into a separate directory
-                sh "git clone ${SPARK_REPO_URL} ${SPARK_REPO_DIR}"
+                script {
+                    // Check if the directory exists and remove it if it does
+                    sh """
+                        if [ -d "${SPARK_REPO_DIR}" ]; then
+                            rm -rf ${SPARK_REPO_DIR}
+                        fi
+                    """
+
+                    // Clone the Spark repository
+                    sh "git clone ${SPARK_REPO_URL} ${SPARK_REPO_DIR}"
+                }
             }
         }
 
         stage('Check File Changes in Spark Repo') {
             steps {
                 script {
-                    // Navigate to the spark repository directory
+                    // Navigate to the Spark repo directory
                     dir("${SPARK_REPO_DIR}") {
                         // Get the last commit's SHA
                         def lastCommit = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
@@ -31,10 +42,10 @@ pipeline {
                         // Get detailed diffs
                         def diffOutput = sh(script: "git diff ${previousCommit} ${lastCommit}", returnStdout: true).trim()
 
-                        echo "Files changed in the last push in Spark repo:"
+                        echo "Files changed in the last push:"
                         echo changedFiles
 
-                        echo "File diffs in Spark repo:"
+                        echo "File diffs:"
                         echo diffOutput
 
                         // Write the changed files and diffs to files
@@ -48,14 +59,18 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 script {
-                    // Remove existing directory if it exists
-                    sh "rm -rf process_repo"
+                    // Remove existing process_repo directory if it exists
+                    sh """
+                        if [ -d "${TEST_REPO_DIR}" ]; then
+                            rm -rf ${TEST_REPO_DIR}
+                        fi
+                    """
 
-                    // Clone Repo B where the Python script is stored
-                    sh "git clone https://github.com/abhilash97-dev/test_jenkins.git process_repo"
+                    // Clone the repository where the Python script is stored
+                    sh "git clone ${TEST_REPO_URL} ${TEST_REPO_DIR}"
 
                     // Run the Python script with the file paths as arguments
-                    sh "python3 process_repo/process_changes.py ${SPARK_REPO_DIR}/changed_files.txt ${SPARK_REPO_DIR}/diff_output.txt"
+                    sh "python3 ${TEST_REPO_DIR}/process_changes.py ${SPARK_REPO_DIR}/changed_files.txt ${SPARK_REPO_DIR}/diff_output.txt"
                 }
             }
         }
